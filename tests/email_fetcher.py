@@ -7,7 +7,7 @@ password = ''
 
 email = MailBox('imap.gmail.com').login(user, password)
 
-listagem_email = email.fetch()
+listagem_email = email.fetch(AND(subject='RESPOSTAS'))
 
 for msg in listagem_email:
     texto = msg.text.replace("\'", "\"").replace('None', '\"null\"')
