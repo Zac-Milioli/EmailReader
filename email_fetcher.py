@@ -1,4 +1,6 @@
 from imap_tools import MailBox, AND
+import pandas as pd
+import json
 
 user = 'escritorios.qai.bot@gmail.com'
 password = ''
@@ -8,5 +10,8 @@ email = MailBox('imap.gmail.com').login(user, password)
 listagem_email = email.fetch()
 
 for msg in listagem_email:
-    print(msg.subject)
-    print(msg.text)
+    texto = msg.text.replace("\'", "\"").replace('None', '\"null\"')
+    texto = json.loads(texto)
+    df = pd.DataFrame(texto)
+
+print(df)
