@@ -2,7 +2,7 @@ from imap_tools import MailBox, AND
 import pandas as pd
 import json
 
-user = 'escritorios.qai.bot@gmail.com'
+user = ''
 password = ''
 
 email = MailBox('imap.gmail.com').login(user, password)
