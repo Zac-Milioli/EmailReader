@@ -47,7 +47,7 @@ class EmailReader:
 
             email = MailBox('imap.gmail.com').login(user, password)
 
-            listagem_email = email.fetch(criteria=AND(seen=True), mark_seen=True, bulk=True)
+            listagem_email = email.fetch(criteria=AND(seen=False), mark_seen=True, bulk=True)
 
             tamanho = 0
             listagem_email = list(listagem_email)
