@@ -2,6 +2,7 @@ import customtkinter as ctk
 import pandas as pd
 import json
 from glob import glob
+import os
 from imap_tools import MailBox, AND
 
 fonte_t = ("Inter", 36, 'bold')
@@ -13,7 +14,7 @@ common_pady = 20
 class EmailReader:
     def __init__(self, root):
         wn = root
-        wn.geometry('400x800')
+        wn.geometry('600x800')
         wn.config(background='white')
         wn.title('EmailReader')
 
@@ -24,13 +25,13 @@ class EmailReader:
         fm.pack_propagate(False)
         fm.pack(expand=True, fill='x')
 
-        email_entry = ctk.CTkEntry(fm, placeholder_text='Email', justify='center', width=300, height=60, font=fonte, text_color='black', fg_color='white', corner_radius=45, border_color='white', placeholder_text_color='black')
+        email_entry = ctk.CTkEntry(fm, placeholder_text='Email', justify='center', width=400, height=60, font=fonte, text_color='black', fg_color='white', corner_radius=45, border_color='white', placeholder_text_color='black')
         email_entry.pack(pady=common_pady)
 
-        password_entry = ctk.CTkEntry(fm, placeholder_text='Senha', justify='center', width=300, height=60, font=fonte, text_color='black', fg_color='white', corner_radius=45, border_color='white', placeholder_text_color='black')
+        password_entry = ctk.CTkEntry(fm, placeholder_text='Senha', justify='center', width=400, height=60, font=fonte, text_color='black', fg_color='white', corner_radius=45, border_color='white', placeholder_text_color='black')
         password_entry.pack(pady=common_pady)
 
-        chave_entry = ctk.CTkEntry(fm, placeholder_text='Título-chave', justify='center', width=300, height=60, font=fonte, text_color='black', fg_color='white', corner_radius=45, border_color='white', placeholder_text_color='black')
+        chave_entry = ctk.CTkEntry(fm, placeholder_text='Título-chave', justify='center', width=400, height=60, font=fonte, text_color='black', fg_color='white', corner_radius=45, border_color='white', placeholder_text_color='black')
         chave_entry.pack(pady=common_pady)
 
 
@@ -46,35 +47,36 @@ class EmailReader:
 
             email = MailBox('imap.gmail.com').login(user, password)
 
-            if keyword != '':
-                listagem_email = email.fetch(AND(subject=keyword))
-            else:
-                listagem_email = email.fetch()
+            listagem_email = email.fetch(criteria=AND(seen=True), mark_seen=True, bulk=True)
 
             tamanho = 0
+            listagem_email = list(listagem_email)
             for x in listagem_email:
-                tamanho += 1
-            terminal_box.insert('0.0', f'Returned {tamanho} emails\n')
+                if keyword != '':
+                    if keyword not in x.subject:
+                        listagem_email.remove(x)
+                    else:
+                        tamanho += 1
+                else:
+                    tamanho += 1
 
+            terminal_box.insert('0.0', f'Returned {tamanho} emails\n')
+            
             if tamanho != 0:
-                print('tamanho maior que zero')
-                print(list(listagem_email))
                 counter = 0
-                for msg in list(listagem_email):
-                    print('passando por aqui')
+                for msg in listagem_email:
                     counter += 1
                     answer_mail = msg.subject.replace(keyword, '').replace(' ', '')
-                    terminal_box.insert('0.0', f'Processing mail from {answer_mail},\tnumber {counter} out of {tamanho}\nbody:\n{msg.text}')
-                    texto = msg.text.replace("\'", "\"").replace('None', '\"null\"')
-                    texto = json.loads(texto)
-                    print(texto)
-                    df = pd.DataFrame(texto)
-                    print(df)
-                    df.to_csv(f'MAIL_{counter}.csv', sep=';')
-            else:
-                terminal_box.insert('0.0', f'No emails returned...\n')
-            
-            terminal_box.insert('0.0', 'Processing done\n')
+                    terminal_box.insert('0.0', f'Processing mail from {answer_mail},\tnumber {counter} out of {tamanho}\n')
+                    corpo = msg.text.replace("\'", "\"").replace('None', 'null').replace("\r", '').replace('\n', ' ').replace('\t', ' ')
+                    corpo = json.loads(corpo)
+                    try:
+                        df = pd.DataFrame(corpo)
+                        df.to_csv(f'MAIL_{counter}.csv', sep=';')
+                    except:
+                        terminal_box.insert('0.0', f'ERROR AT EMAIL FROM {answer_mail}. skipping...\n')
+
+                terminal_box.insert('0.0', 'Processing done\n')
 
         fetch_button = ctk.CTkButton(fm, fg_color='#A9D18E', text='Fetch', font=fonte, hover_color='#000000', text_color='white', corner_radius=45, width=240, height=50, command=fetch_emails)
         fetch_button.pack(pady=common_pady)
@@ -85,7 +87,7 @@ class EmailReader:
             print(globed)
             terminal_box.insert('0.0', 'globed a few dataframes (or not)')
 
-        joindf_button = ctk.CTkButton(fm, fg_color='#A9D18E', text='Juntar DataFrames', font=fonte, hover_color='#000000', text_color='white', corner_radius=45, width=240, height=50)
+        joindf_button = ctk.CTkButton(fm, fg_color='#A9D18E', text='Juntar DataFrames', font=fonte, hover_color='#000000', text_color='white', corner_radius=45, width=240, height=50, command=join_dataframes)
         joindf_button.pack(pady=common_pady)
 
         wn.mainloop()
