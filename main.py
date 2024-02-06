@@ -58,19 +58,26 @@ class EmailReader:
                 counter = 0
                 for msg in listagem_email:
                     sleep(0.3)
-                    if len(msg.text) > 30:
-                        terminal_box.insert('0.0', f'Empty mail found. skipping...\n')
+                    if len(msg.text) < 5:
+                        terminal_box.insert('0.0', f'Empty mail found. {msg}\n')
+                    elif keyword != '' and keyword not in msg.subject:
+                        terminal_box.insert('0.0', f'Mail without keyword returned. {msg}\n')
+                        pass
                     else:
                         counter += 1
                         answer_mail = msg.subject.replace(keyword, '').replace(' ', '')
+                        name = answer_mail.replace('.', '').split('@')[0]
                         terminal_box.insert('0.0', f'Processing mail from {answer_mail},\tnumber {counter}\n')
-                        corpo = msg.text.replace("\'", "\"").replace('None', 'null').replace("\r", '').replace('\n', ' ').replace('\t', ' ')
+                        corpo = msg.text.replace("\n", '').replace('None', '"sem comentários"').replace('-', '').replace("'", '"').lower()
                         corpo = json.loads(corpo, strict=False)
                         try:
-                            df = pd.DataFrame(corpo)
-                            df.to_csv(f'MAIL_{counter}.csv', sep=';')
+                            df = pd.DataFrame()
+                            df['id_pergunta'] = corpo['id_pergunta']
+                            df['resposta'] = corpo['resposta']
+                            df['email'] = answer_mail
+                            df.to_csv(f'MAIL_{counter}_{name}.csv', encoding='latin-1', sep=';')
                         except:
-                            terminal_box.insert('0.0', f'ERROR AT DATAFRAME FROM EMAIL FROM {answer_mail}. skipping...\n')
+                            terminal_box.insert('0.0', f'\nERROR. Not possible to create DataFrame from {answer_mail}: {msg.text}\n')
                 sleep(0.3)
                 terminal_box.insert('0.0', 'Processing done\n')
 
@@ -84,20 +91,24 @@ class EmailReader:
             if size_globed < 1:
                 terminal_box.insert('0.0', 'No DataFrames to join...\n')
             else:
-                principal = pd.read_csv(globed[0], sep=';')
+                principal = pd.read_csv(globed[0], encoding='latin-1', sep=';')
                 os.remove(globed[0])
                 globed.pop(0)
                 for i in globed:
                     sleep(0.3)
                     terminal_box.insert('0.0', f'Joining DataFrame {i} to the main\n')
-                    new = pd.read_csv(i, sep=';')
-                    principal = pd.concat([principal, new], ignore_index=True)
-                    os.remove(i)
+                    new = pd.read_csv(i, encoding='latin-1',sep=';')
+                    try:
+                        principal = pd.concat([principal, new], ignore_index=True)
+                        principal.drop(columns='Unnamed: 0', axis=1, inplace=True)
+                        os.remove(i)
+                    except:
+                        terminal_box.insert('0.0', f'Could not concatenate DataFrame {i}\n')
                 main_already = glob('MAIN_DATAFRAME.csv')
                 if len(main_already) >= 1:
-                    principal.to_csv(f'MAIN_DATAFRAME_{len(main_already)}.csv', sep=';')
+                    principal.to_csv(f'MAIN_DATAFRAME({len(main_already)}).csv', encoding='latin-1',sep=';')
                 else:
-                    principal.to_csv('MAIN_DATAFRAME.csv', sep=';')
+                    principal.to_csv('MAIN_DATAFRAME.csv', encoding='latin-1',sep=';')
             sleep(0.3)
             terminal_box.insert('0.0', 'Joining complete\n')
 
