@@ -2,7 +2,7 @@ import pandas as pd
 import json
 from glob import glob
 from imap_tools import MailBox, AND
-from datetime import time 
+from datetime import datetime 
 
 user = 'escritorios.qai.bot@gmail.com'
 password = 'sxux ztfv fsiw'
@@ -47,6 +47,7 @@ def fetch_emails():
             mail.loc[~mail['id_pergunta'].isin(megalista), :] = None
         for mail in mails_list:
             big_df.loc[len(big_df)] = mail['resposta'].values
+        big_df.to_csv(f'respostas_retornadas({datetime.now()}).csv', sep=';', encoding='latin-1')
 
 while True:
     input('aperta enter')
