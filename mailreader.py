@@ -4,6 +4,8 @@ from glob import glob
 from imap_tools import MailBox, AND
 from datetime import datetime 
 from time import sleep
+import warnings
+warnings.filterwarnings("ignore")
 
 user = 'escritorios.qai.bot@gmail.com'
 password = 'sxux ztfv fsiw aqfp'
@@ -18,7 +20,6 @@ def fetch_emails():
 
     listagem_email = list(listagem_email)
     tamanho = len(listagem_email)
-    print(listagem_email)
 
     if tamanho != 0:
         for msg in listagem_email:
@@ -31,30 +32,32 @@ def fetch_emails():
                 name = answer_mail.replace('.', '').split('@')[0]
                 corpo = msg.text.replace("\n", '').replace('None', '"sem comentários"').replace('-', '').replace("'", '"').lower()
                 corpo = json.loads(corpo, strict=False)
-                try:
-                    df = pd.DataFrame()
-                    df['id_pergunta'] = corpo['id_pergunta']
-                    df['resposta'] = corpo['resposta']
-                    df = df.append({'id_pergunta': 'email', 'resposta': answer_mail})
-                    mails_list.append(df)
-                except:
-                    print(f'\nERROR. Not possible to create DataFrame from {answer_mail} (lenght id_pergunta: {len(corpo["id_pergunta"])} lenght resposta: {len(corpo["resposta"])}): {corpo}')
-                    open(f'error_at_mail_{name}.txt', 'w').write(f'\nERROR. Not possible to create DataFrame from {answer_mail} (lenght id_pergunta: {len(corpo["id_pergunta"])} lenght resposta: {len(corpo["resposta"])}): {corpo}')
+                corpo['id_pergunta'].append('email')
+                corpo['resposta'].append(answer_mail)
+                missing_items = set(megalista) - set(corpo['id_pergunta'])
+                for item in missing_items:
+                    corpo['id_pergunta'].append(item)
+                    corpo['resposta'].append(None)
+                if len(corpo['id_pergunta']) != len(corpo['resposta']):
+                    diferenca = len(corpo['id_pergunta']) - len(corpo['resposta'])
+                    if diferenca != 0:
+                        print(f'Different lenghts between id_pergunta and resposta ({diferenca}) at mail from {answer_mail}.\n')
+                        open(f'diferente_num_pergunta_resposta_at_mail_{name}.txt', 'w').write(f'ERROR. Different lenghts between id_pergunta and resposta ({diferenca}). lenght id_pergunta: {len(corpo["id_pergunta"])} lenght resposta: {len(corpo["resposta"])}\nbody: {corpo}\n')
+                    for _ in range(diferenca):
+                        corpo['resposta'].append(None)
+                df = pd.DataFrame(corpo)
+                df.set_index('id_pergunta', inplace=True, drop=True)
+                df = df.transpose()
+                print(df)
+                mails_list.append(df)
                 sleep(0.2)
-
-        big_df = pd.DataFrame(columns=megalista)
+        
+        big_df = mails_list[0]
+        mails_list.pop(0)
         for mail in mails_list:
-            missing_items = set(megalista) - set(mail['id_pergunta'])
-            mail.set_index('id_pergunta', inplace=True)
-            mail.transpose(inplace=True)
-            for item in missing_items:
-                mail[item] = None
-            print(mail)
-            big_df = pd.concat([big_df, mail], ignore_index=True)
+            big_df = big_df._append(mail, ignore_index=True)
 
         big_df.to_csv(f'respostas_retornadas({datetime.now():%d.%m.%y-%I %p}).csv', sep=';', encoding='latin-1')
 
-while True:
-    input('aperta enter')
-    fetch_emails()
-    break
+
+fetch_emails()
