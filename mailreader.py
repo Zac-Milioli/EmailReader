@@ -23,6 +23,7 @@ def fetch_emails():
 
     if tamanho != 0:
         for msg in listagem_email:
+            print(f'\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n')
             if len(msg.text) < 10:
                 print(f'Empty mail found. {msg}\n')
             elif keyword not in msg.subject:
@@ -32,30 +33,29 @@ def fetch_emails():
                 name = answer_mail.replace('.', '').split('@')[0]
                 corpo = msg.text.replace("\n", '').replace('None', '"sem comentários"').replace('-', '').replace("'", '"').lower()
                 corpo = json.loads(corpo, strict=False)
-                corpo['id_pergunta'].append('email')
-                corpo['resposta'].append(answer_mail)
                 missing_items = set(megalista) - set(corpo['id_pergunta'])
                 for item in missing_items:
                     corpo['id_pergunta'].append(item)
                     corpo['resposta'].append(None)
                 if len(corpo['id_pergunta']) != len(corpo['resposta']):
                     diferenca = len(corpo['id_pergunta']) - len(corpo['resposta'])
-                    if diferenca != 0:
-                        print(f'Different lenghts between id_pergunta and resposta ({diferenca}) at mail from {answer_mail}.\n')
-                        open(f'diferente_num_pergunta_resposta_at_mail_{name}.txt', 'w').write(f'ERROR. Different lenghts between id_pergunta and resposta ({diferenca}). lenght id_pergunta: {len(corpo["id_pergunta"])} lenght resposta: {len(corpo["resposta"])}\nbody: {corpo}\n')
+                    print(f'Different lenghts between id_pergunta and resposta ({diferenca}) at mail from {answer_mail}.\n')
+                    open(f'different_num_pergunta_resposta_at_mail_{name}.json', 'w').write(f'{corpo}\n')
                     for _ in range(diferenca):
                         corpo['resposta'].append(None)
                 df = pd.DataFrame(corpo)
                 df.set_index('id_pergunta', inplace=True, drop=True)
                 df = df.transpose()
+                df.loc[:, 'email'] = answer_mail
                 print(df)
                 mails_list.append(df)
                 sleep(0.2)
+        print(f'\n-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\n')
         
         big_df = mails_list[0]
         mails_list.pop(0)
         for mail in mails_list:
-            big_df = big_df._append(mail, ignore_index=True)
+            big_df = pd.concat([big_df, mail], ignore_index=True)
 
         big_df.to_csv(f'respostas_retornadas({datetime.now():%d.%m.%y-%I %p}).csv', sep=';', encoding='latin-1')
 
