@@ -10,7 +10,6 @@ warnings.filterwarnings("ignore")
 user = 'escritorios.qai.bot@gmail.com'
 password = 'sxux ztfv fsiw aqfp'
 keyword = 'RESPOSTAS-'
-megalista = []
 
 def fetch_emails():
     mails_list = []
