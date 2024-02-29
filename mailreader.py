@@ -7,8 +7,8 @@ from time import sleep
 import warnings
 warnings.filterwarnings("ignore")
 
-user = 'escritorios.qai.bot@gmail.com'
-password = 'sxux ztfv fsiw aqfp'
+user = ''
+password = ''
 keyword = 'RESPOSTAS-'
 
 def fetch_emails():
