@@ -46,5 +46,17 @@ def fetch_emails():
 
         big_df.to_csv(f'respostas_retornadas({datetime.now():%d.%m.%y-%I %p}).csv', sep=';', encoding='latin-1')
 
-
-fetch_emails()
+while True:
+    print("\n"*50)
+    print('____________________________________')
+    print('\nO que deseja fazer?\n\n[1] Buscar emails e gerar planilha\n[ENTER] Sair\n')
+    print('____________________________________')
+    opt = input('\n...')
+    if opt == '1':
+        print("\n"*50)
+        fetch_emails()
+    elif opt == '':
+        break
+    else:
+        print('\n\n\nSELECIONE UMA OPÇÃO VÁLIDA!\n')
+        sleep(1.5)
